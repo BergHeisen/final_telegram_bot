@@ -9,7 +9,7 @@ LIBS		:= ./libs
 SRCS    := $(wildcard $(SRC)/*.cpp)
 OBJS    := $(patsubst $(SRC)/%.cpp,$(OBJ)/%.o,$(SRCS))
 EXE     := $(BIN)/main.out
-CFLAGS  := -DDebug -Wall -g -O0 -I$(INCLUDE) -I./third_party/tgbot-cpp/include -I./third_party/nlohmann_json/single_include -I./third_party/fmt/include -I./third_party/plog/include -I./third_party/thread-pool -std=c++17 -I/opt/homebrew/Cellar/boost/1.79.0_1/include/ -I./third_party/cpp_redis/includes
+CFLAGS  := -DDebug -Wall -g -O0 -I$(INCLUDE) -I./third_party/tgbot-cpp/include -I./third_party/nlohmann_json/single_include -I./third_party/fmt/include -I./third_party/plog/include -I./third_party/thread-pool -std=c++17 -I./third_party/cpp_redis/includes
 LDLIBS  := -lm -lssl -lcrypto -lpthread -lboost_system
 STATIC_LIBRARIES := ${LIBS}/libTgBot.a ${LIBS}/libfmt.a ${LIBS}/libcpp_redis.a ${LIBS}/libtacopie.a
 
