@@ -13,3 +13,9 @@
 [submodule "third_party/thread-pool"]
 	path = third_party/thread-pool
 	url = https://github.com/bshoshany/thread-pool.git
+[submodule "third_party/redox"]
+	path = third_party/redox
+	url = https://github.com/hmartiro/redox.git
+[submodule "third_party/cpp_redis"]
+	path = third_party/cpp_redis
+	url = https://github.com/cpp-redis/cpp_redis.git
