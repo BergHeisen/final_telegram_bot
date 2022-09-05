@@ -1,19 +1,23 @@
 #include "yt.hpp"
+#include "boost/algorithm/string/predicate.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <array>
+#include <boost/range/adaptor/reversed.hpp>
 #include <cstddef>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <regex>
 #include <set>
+#include <string>
 #include <utility>
 #include <variant>
 
-const std::array<std::string, 8> RESOLUTIONS = {"144", "240",  "360",  "480",
-                                                "720", "1080", "1440", "2160"};
+const std::array<int, 8> RESOLUTIONS = {144, 240,  360,  480,
+                                        720, 1080, 1440, 2160};
 
 static std::regex formatNoteRegex("(^[\\d]+)");
 
@@ -60,8 +64,11 @@ void from_json(const nlohmann::json &j, VideoInformation &p) {
   j.at("title").get_to(p.title);
 }
 
-std::pair<std::shared_ptr<VideoInformation>, int>
-getVideoInformationJSON(const char *url) {
+#ifdef DEBUG
+template class std::shared_ptr<VideoInformation>
+#endif
+    std::pair<std::shared_ptr<VideoInformation>, int>
+    getVideoInformationJSON(const char *url) {
   auto [jsonString, exitCode] = exec("yt-dlp", {"-j", url});
   if (exitCode == 0) {
     auto json = nlohmann::json::parse(jsonString);
@@ -72,35 +79,42 @@ getVideoInformationJSON(const char *url) {
   return std::pair(std::make_shared<VideoInformation>(), exitCode);
 }
 
-std::set<std::string> getAvailableResolutions(VideoInformation &information) {
-  std::set<std::string> resolutions;
-  if (information.formats.begin()->format_note == "unknown") {
+std::set<int>
+getAvailableResolutions(VideoInformation &information) {
+  std::set<int> resolutions;
+  if (information.formats.begin()->format_note == "unknown" &&
+      information.extractor != "twitter") {
     return resolutions;
   }
-  /*if (information.extractor == "youtube") {
-    std::copy_if(RESOLUTIONS.begin(), RESOLUTIONS.end(),
-                 std::back_inserter(resolutions), [&](std::string &res) {
-                   std::any_of(information.formats.begin(),
-                               information.formats.end(),
-                               [&](VideoFormat &fmt) {
-                                 std::cmatch matches;
-                                 std::regex_search(fmt.format_note.c_str(),
-                                                   matches, formatNoteRegex);
-                                 if (matches.size() == 0)
-                                   return false;
-                                 return matches.begin()->str() == res;
-                               });
-                 });
-    return resolutions;
-  }
-  std::copy_if(information.formats.begin(), information.formats.end(),
-               std::back_inserter(resolutions), [](VideoFormat &fmt) {
-                 return std::min(fmt.height, fmt.width);
-               });*/
-  for (auto &i : information.formats) {
-    if (min(i.width, i.height) >= 144) {
-      resolutions.insert(std::to_string(min(i.width, i.height).value()));
+  if (information.extractor == "youtube") {
+    for (auto res : RESOLUTIONS) {
+      for (auto &fmt : information.formats) {
+        std::cmatch matches;
+
+        if (std::regex_search(fmt.format_note.c_str(), matches,
+                              formatNoteRegex))
+          if (std::stoi(matches.begin()->str()) == res) {
+            resolutions.insert(res);
+          }
+      }
+    }
+  } else {
+    for (auto &i : information.formats) {
+      if (min(i.width, i.height) >= 144) {
+      }
     }
   }
+
   return resolutions;
+}
+
+std::string getThumbnail(VideoInformation &information) {
+  if (!information.thumbnails.has_value())
+    return "";
+  for (auto &i : boost::adaptors::reverse(information.thumbnails.value())) {
+    if (boost::algorithm::contains(i.url, ".webp")) {
+      continue;
+    }
+    return i.url;
+  }
 }

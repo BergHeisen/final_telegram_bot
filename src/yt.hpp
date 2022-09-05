@@ -36,4 +36,5 @@ int download_video(const char *url, const char *resolution,
 std::pair<std::shared_ptr<VideoInformation>, int>
 getVideoInformationJSON(const char *url);
 
-std::set<std::string> getAvailableResolutions(VideoInformation &information);
+std::set<int> getAvailableResolutions(VideoInformation &information);
+std::string getThumbnail(VideoInformation &information);
