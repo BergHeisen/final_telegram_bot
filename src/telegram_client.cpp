@@ -9,6 +9,7 @@
 #include "tgbot/Bot.h"
 #include "tgbot/TgException.h"
 #include "tgbot/net/TgLongPoll.h"
+#include "tgbot/types/CallbackQuery.h"
 #include "tgbot/types/GenericReply.h"
 #include "tgbot/types/InlineKeyboardButton.h"
 #include "tgbot/types/InlineKeyboardMarkup.h"
@@ -17,9 +18,11 @@
 #include <iostream>
 #include <memory>
 #include <plog/Log.h>
+#include <string>
 #include <unistd.h>
 
 static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
+std::string sanitizeForMarkdownV2(std::string);
 
 TelegramClient::TelegramClient(const char *token) {
   plog::init(plog::debug, &consoleAppender);
@@ -38,13 +41,39 @@ std::shared_ptr<GenericReply> generateKeyboard(VideoInformation &info) {
     currentIndex++;
     auto button = std::vector<InlineKeyboardButton::Ptr>(
         {std::make_shared<InlineKeyboardButton>()});
-    DownloadRequest requestInfo{"1", "download", "url"};
+    DownloadRequest requestInfo{info.url, true};
     std::string request = createRequest<DownloadRequest>(requestInfo);
+    LOGD << fmt::format("Adding Request for AudioDownload of url: {} to {}",
+                        info.title, request);
     button[0]->text = "Audio Only";
     button[0]->callbackData = "Nothing";
     keyboard->inlineKeyboard.push_back(button);
   }
+  if (resolutions.empty()) {
+    DownloadRequest requestInfo{info.url, false};
+    std::string request = createRequest(requestInfo);
+    auto button = std::vector<InlineKeyboardButton::Ptr>(
+        {std::make_shared<InlineKeyboardButton>()});
+    button[0]->text = "Download Video";
+    button[0]->callbackData = request;
+    keyboard->inlineKeyboard.push_back(button);
+    return keyboard;
+  }
 
+  for (auto &res : resolutions) {
+    if (keyboard->inlineKeyboard.size() == currentIndex) {
+      keyboard->inlineKeyboard.push_back(
+          std::vector<InlineKeyboardButton::Ptr>());
+    }
+    DownloadRequest requestInfo{info.url, false, std::to_string(res)};
+    std::string request = createRequest(requestInfo);
+    auto button = std::make_shared<InlineKeyboardButton>();
+    button->text = std::to_string(res) + "p";
+    button->callbackData = request;
+    keyboard->inlineKeyboard[currentIndex].push_back(button);
+    if (keyboard->inlineKeyboard[currentIndex].size() == 2)
+      currentIndex++;
+  }
   return keyboard;
 };
 
@@ -54,28 +83,6 @@ bool replace(std::string &str, const std::string &from, const std::string &to) {
     return false;
   str.replace(start_pos, from.length(), to);
   return true;
-}
-
-std::string sanitizeForMarkdownV2(std::string str) {
-  replace(str, "_", "\\_");
-  replace(str, "*", "\\*");
-  replace(str, "[", "\\[");
-  replace(str, "]", "\\]");
-  replace(str, "(", "\\(");
-  replace(str, ")", "\\)");
-  replace(str, "~", "\\~");
-  replace(str, "`", "\\`");
-  replace(str, ">", "\\>");
-  replace(str, "#", "\\#");
-  replace(str, "+", "\\+");
-  replace(str, "-", "\\-");
-  replace(str, "=", "\\=");
-  replace(str, "|", "\\|");
-  replace(str, "{", "\\{");
-  replace(str, "}", "\\}");
-  replace(str, "!", "\\!");
-  replace(str, ".", "\\.");
-  return str;
 }
 
 void handleMessage(Bot *client, Message::Ptr message) {
@@ -101,13 +108,21 @@ void handleMessage(Bot *client, Message::Ptr message) {
 }
 
 void TelegramClient::setupMessageHandlers() {
-  bot->getEvents().onAnyMessage([this](Message::Ptr message) {
+  bot->getEvents().onAnyMessage([](Message::Ptr message) {
     PLOGD << fmt::format("Received message: {} from: {}", message->text,
                          message->from->username);
   });
 
   bot->getEvents().onNonCommandMessage([this](Message::Ptr message) {
     pool.push_task(&handleMessage, bot.get(), message);
+  });
+
+  bot->getEvents().onCallbackQuery([this](CallbackQuery::Ptr callbackQuery) {
+    bot->getApi().sendMessage(
+        callbackQuery->message->chat->id,
+        fmt::format("*{}*", sanitizeForMarkdownV2("Processing Request")), false,
+        callbackQuery->message->messageId, std::make_shared<GenericReply>(),
+        "MarkdownV2");
   });
 }
 
@@ -124,4 +139,26 @@ void TelegramClient::start() {
     PLOGE << "Error Occured!";
     PLOGE << e.what();
   }
+}
+
+std::string sanitizeForMarkdownV2(std::string str) {
+  replace(str, "_", "\\_");
+  replace(str, "*", "\\*");
+  replace(str, "[", "\\[");
+  replace(str, "]", "\\]");
+  replace(str, "(", "\\(");
+  replace(str, ")", "\\)");
+  replace(str, "~", "\\~");
+  replace(str, "`", "\\`");
+  replace(str, ">", "\\>");
+  replace(str, "#", "\\#");
+  replace(str, "+", "\\+");
+  replace(str, "-", "\\-");
+  replace(str, "=", "\\=");
+  replace(str, "|", "\\|");
+  replace(str, "{", "\\{");
+  replace(str, "}", "\\}");
+  replace(str, "!", "\\!");
+  replace(str, ".", "\\.");
+  return str;
 }
