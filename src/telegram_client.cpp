@@ -107,6 +107,14 @@ void handleMessage(Bot *client, Message::Ptr message) {
   }
 }
 
+void handleQuery(Bot *bot, CallbackQuery::Ptr callbackQuery) {
+  auto processingMessage = bot->getApi().sendMessage(
+      callbackQuery->message->chat->id,
+      fmt::format("*{}*", sanitizeForMarkdownV2("Processing Request")), false,
+      callbackQuery->message->messageId, std::make_shared<GenericReply>(),
+      "MarkdownV2");
+}
+
 void TelegramClient::setupMessageHandlers() {
   bot->getEvents().onAnyMessage([](Message::Ptr message) {
     PLOGD << fmt::format("Received message: {} from: {}", message->text,
@@ -118,11 +126,7 @@ void TelegramClient::setupMessageHandlers() {
   });
 
   bot->getEvents().onCallbackQuery([this](CallbackQuery::Ptr callbackQuery) {
-    bot->getApi().sendMessage(
-        callbackQuery->message->chat->id,
-        fmt::format("*{}*", sanitizeForMarkdownV2("Processing Request")), false,
-        callbackQuery->message->messageId, std::make_shared<GenericReply>(),
-        "MarkdownV2");
+    pool.push_task(&handleQuery, bot.get(), callbackQuery);
   });
 }
 
