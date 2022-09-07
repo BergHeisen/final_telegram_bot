@@ -20,6 +20,7 @@ struct Thumbnail {
 
 typedef std::optional<std::vector<Thumbnail>> Thumbnails;
 struct VideoInformation {
+  std::string url;
   std::string title;
   std::string uploader;
   std::string id;
