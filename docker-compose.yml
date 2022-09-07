@@ -1,0 +1,35 @@
+
+services:
+  main:
+    build: .
+    restart: unless-stopped
+    environment:
+      - DOWNLOAD_LOCATION=/mnt/disks/filestorage/videos
+      - MONGO_URL=mongodb://mongo:27017
+      - REDIS_HOST=redis_db
+      - SERVER_URL=bergheisen.com
+      - VIDEO_DOWNLOAD_SIZE_LIMIT_MEGABYTES=200
+      - RATE_LIMITER_RATE=5000
+      - RATE_LIMITER_THRESHOLD=10
+    volumes:
+      - video-volume:/mnt/disks/filestorage/videos
+    networks:
+      - application-network
+  redis_db:
+    hostname: redis_db
+    image: redis:latest
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis_data_container:/data
+    networks:
+      - application-network
+
+
+networks:
+  application-network:
+
+volumes:
+  video-volume:
+  mongodb_data_container:
+  redis_data_container:
