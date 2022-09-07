@@ -62,6 +62,7 @@ void from_json(const nlohmann::json &j, VideoInformation &p) {
   j.at("formats").get_to<std::vector<VideoFormat>>(p.formats);
   p.uploader = value_at_or_default<std::string>(j, "uploader", "unknown");
   j.at("title").get_to(p.title);
+  j.at("original_url").get_to(p.url);
 }
 
 #ifdef DEBUG
@@ -71,9 +72,14 @@ template class std::shared_ptr<VideoInformation>
     getVideoInformationJSON(const char *url) {
   auto [jsonString, exitCode] = exec("yt-dlp", {"-j", url});
   if (exitCode == 0) {
-    auto json = nlohmann::json::parse(jsonString);
-    auto videoFormat = json.get<VideoInformation>();
-    return std::pair(std::make_shared<VideoInformation>(videoFormat), exitCode);
+    try {
+      auto json = nlohmann::json::parse(jsonString);
+      auto videoFormat = json.get<VideoInformation>();
+      return std::pair(std::make_shared<VideoInformation>(videoFormat),
+                       exitCode);
+    } catch (nlohmann::json::exception) {
+      return std::pair(std::make_shared<VideoInformation>(), 1);
+    }
   }
 
   return std::pair(std::make_shared<VideoInformation>(), exitCode);
