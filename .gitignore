@@ -1,6 +1,7 @@
 bin/
 libs/
 obj/
+test_obj/
 .cache/
 compile_commands.json
 
