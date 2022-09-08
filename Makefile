@@ -78,7 +78,6 @@ $(TEST_EXE): $(TEST_OBJS)
 
 test: $(TEST_EXE) 
 
-all: ; $(info $$var is [${TEST_OBJS}])echo Hello world
 clean:
 	$(RMDIR) $(OBJ) $(BIN) $(LIBS) third_party/tgbot-cpp/build third_party/fmt/build third_party/cpp_redis/build
 
