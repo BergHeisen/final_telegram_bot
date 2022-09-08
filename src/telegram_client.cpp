@@ -21,11 +21,9 @@
 #include <string>
 #include <unistd.h>
 
-static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
 std::string sanitizeForMarkdownV2(std::string);
 
 TelegramClient::TelegramClient(const char *token) {
-  plog::init(plog::debug, &consoleAppender);
   bot = std::make_unique<Bot>(Bot(token));
   setupMessageHandlers();
 }
