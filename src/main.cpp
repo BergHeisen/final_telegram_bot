@@ -8,7 +8,6 @@
 #include <fmt/ranges.h>
 #include <iostream>
 #include <unistd.h>
-
 static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
 
 int main(int argc, char **argv) {
