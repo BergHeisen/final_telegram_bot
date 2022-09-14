@@ -21,8 +21,6 @@ string readFileIntoString(const string &path) {
 }
 
 TEST(TCPConnection, TCPConnection) {
-  auto connection = TCPConnection::instantiate("127.0.0.1", 3436);
-  // auto content = readFileIntoString("./info.json");
-  connection->exchangeMessage("Hello World");
-  std::cout << "Finished";
+  // auto connection = TCPConnection::instantiate("127.0.0.1", 3436);
+  //  auto content = readFileIntoString("./info.json");
 }

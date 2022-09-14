@@ -31,8 +31,9 @@ void RedisClient::set(std::string &key, std::string &value) const {
 }
 
 std::string RedisClient::get(std::string &key) const {
-  auto reply = client->get(key).get();
+  auto future = client->get(key);
   client->sync_commit();
+  const auto reply = future.get();
   if (reply.is_null() || reply.is_error()) {
     return "";
   } else {

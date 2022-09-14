@@ -16,9 +16,9 @@ public:
   TCPConnection(const std::string &host, const int port);
   static std::shared_ptr<TCPConnection> instantiate(const std::string &host,
                                                     const int port);
-  void sendData(void *data, const int dataLen);
-  void receiveData(void *data, const int dataLenToRead);
-  void receiveData(std::stringstream &ss, const int dataLenToRead);
+  uint32_t receiveDataLength();
+  void sendData(void *data, const uint32_t dataLen);
+  std::string receiveData(const uint32_t dataLenToRead);
   std::string exchangeMessage(const std::string &message);
   ~TCPConnection();
 };

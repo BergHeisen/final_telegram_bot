@@ -1,7 +1,7 @@
 #include "tcp_client.hpp"
 #include "fmt/core.h"
+#include <_types/_uint32_t.h>
 #include <arpa/inet.h>
-#include <asm-generic/socket.h>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -46,47 +46,44 @@ void TCPConnection::initiate_connection(const std::string &host,
     connected = true;
   };
 }
-void TCPConnection::sendData(void *data, const int dataLen) {
-  send(sockfd, &dataLen, sizeof(dataLen), 0);
-  int ok;
-  recv(sockfd, &ok, sizeof(int), 0);
-  assert(ok == dataLen);
+void TCPConnection::sendData(void *data, const uint32_t dataLen) {
+  const uint32_t dataLength = htonl(dataLen);
+  send(sockfd, &dataLength, sizeof(uint32_t), 0);
   send(sockfd, data, dataLen, 0);
 }
 
-void TCPConnection::receiveData(void *data, const int dataLenToRead) {
-  if (dataLenToRead < 2048) {
-    recv(sockfd, data, sizeof(dataLenToRead), 0);
-  } else {
+std::string TCPConnection::receiveData(const uint32_t dataLenToRead) {
+  uint32_t bytes_read = 0;
+  std::vector<uint8_t> buf;
+  buf.resize(dataLenToRead, 0x00);
+  while (bytes_read < dataLenToRead) {
+    bytes_read +=
+        recv(sockfd, &(buf[bytes_read]), dataLenToRead - bytes_read, 0);
   }
+  LOGD << fmt::format("Bytes read: {}", bytes_read);
+  std::string result;
+  return result.assign(buf.begin(), buf.end());
 }
-void TCPConnection::receiveData(std::stringstream &ss,
-                                const int dataLenToRead) {
-  int bytes_read = 0;
-  char buf[2048];
-  while (dataLenToRead != bytes_read) {
-    memset(&buf, 0, sizeof(buf));
-    bytes_read += recv(sockfd, &buf, sizeof(buf), 0);
-    ss << buf;
-  }
+
+uint32_t TCPConnection::receiveDataLength() {
+  uint32_t dataLength;
+  recv(sockfd, &dataLength, sizeof(uint32_t), 0);
+  return ntohl(dataLength);
 }
 
 std::string TCPConnection::exchangeMessage(const std::string &message) {
   int bytesRead = 0;
-  int size = message.size();
+  uint32_t size = message.size();
   int response_length = 0;
   const char *messageCstring = message.c_str();
   std::stringstream ss;
   LOGD << fmt::format("size = {}", size);
   sendData((void *)messageCstring, size);
-
-  receiveData(&response_length, 4);
-
-  LOGD << fmt::format("Have to read {} bytes", response_length);
-
-  receiveData(ss, response_length);
+  uint32_t dataLength = receiveDataLength();
+  LOGD << fmt::format("Have to read {} bytes", dataLength);
+  std::string output = receiveData(dataLength);
   LOGD << fmt::format("Server responded with: {}", "success");
-  return ss.str();
+  return output;
 }
 
 void TCPConnection::closeConnection() {

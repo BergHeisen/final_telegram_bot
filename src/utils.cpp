@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdlib>
 #include <memory>
+#include <openssl/sha.h>
 #include <sstream>
 #include <unistd.h>
 
@@ -9,6 +10,14 @@ std::string get_env_var_or_default(std::string const &key,
                                    std::string const defaultValue) {
   char *val = getenv(key.c_str());
   return val == NULL ? defaultValue : std::string(val);
+}
+
+std::string hash(const std::string &input) {
+  uint8_t hash[SHA_DIGEST_LENGTH];
+  unsigned char uc_url[input.size()];
+  std::copy(input.begin(), input.end(), uc_url);
+  SHA1(uc_url, input.size(), hash);
+  return std::string(reinterpret_cast<const char *>(uc_url));
 }
 
 std::pair<std::string, int> exec(const char *command,

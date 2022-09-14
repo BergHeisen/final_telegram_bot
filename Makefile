@@ -16,13 +16,12 @@ TEST_OBJS := $(patsubst $(SRC)/%.cpp,$(OBJ)/%.o,$(SRCS_NOMAIN)) $(patsubst $(TES
 OBJS    := $(patsubst $(SRC)/%.cpp,$(OBJ)/%.o,$(SRCS))
 EXE     := $(BIN)/main.out
 TEST_EXE := $(BIN)/test.out
-CFLAGS  := -DDebug -Wall -g -O0 -I$(INCLUDE) -I./third_party/tgbot-cpp/include -I./third_party/nlohmann_json/single_include -I./third_party/fmt/include -I./third_party/plog/include -I./third_party/thread-pool -std=c++17 -I./third_party/cpp_redis/includes
-LDLIBS  := -lm -lssl -lcrypto -lpthread -lboost_system
+CXXFLAGS  := -DDebug -Wall -g -O0 -I$(INCLUDE) -I./third_party/tgbot-cpp/include -I./third_party/nlohmann_json/single_include -I./third_party/fmt/include -I./third_party/plog/include -I./third_party/thread-pool -std=c++17 -I./third_party/cpp_redis/includes $(CXXFLAGS)
+LDLIBS  := -lm -lssl -lcrypto -lpthread -lboost_system -lsqlite3 -lboost_filesystem
+
 STATIC_LIBRARIES := ${LIBS}/libTgBot.a ${LIBS}/libfmt.a ${LIBS}/libcpp_redis.a ${LIBS}/libtacopie.a
 
-TEST_CFLAGS = $(CFLAGS)
-TEST_LFLAGS = $(CFLAGS)
-GTEST = /usr/local/lib/libgtest.a
+GTEST = "${GTEST_LIB:-/usr/local/lib/libgtest.a}"
 
 
 .PHONY: all run clean
@@ -62,7 +61,7 @@ $(EXE): $(OBJS) ${STATIC_LIBRARIES} | $(BIN)
 	$(CC) $(LDFLAGS) $^ -o $@ $(STATIC_LIBRARIES) $(LDLIBS) 
 
 $(OBJ)/%.o: $(SRC)/%.cpp | $(OBJ)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CXXFLAGS) -c $< -o $@
 
 $(BIN) $(OBJ) $(TEST_OBJ):
 	$(MKDIR) $@
@@ -71,10 +70,10 @@ run: $(EXE)
 	$<
 
 $(TEST_OBJ)/%.o: $(TEST_SRC)/%.cpp | $(TEST_OBJ)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CXXFLAGS) -c $< -o $@
 
-$(TEST_EXE): $(TEST_OBJS) 
-	$(CC) $(LDFLAGS) $^ -o $@ $(GTEST) $(STATIC_LIBRARIES) $(LDLIBS)
+$(TEST_EXE): $(TEST_OBJS)  $(STATIC_LIBRARIES) | $(BIN)
+	$(CC) $(LDFLAGS) $^ -o $@ $(STATIC_LIBRARIES) $(LDLIBS) $(GTEST_LIB)
 
 test: $(TEST_EXE) 
 

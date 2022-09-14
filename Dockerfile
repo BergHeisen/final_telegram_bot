@@ -1,6 +1,6 @@
 FROM alpine:3.16.2
 
-RUN apk add g++ make binutils cmake openssl-dev boost-dev curl-dev zlib-dev yt-dlp clang
+RUN apk add g++ make binutils cmake openssl-dev boost-dev curl-dev zlib-dev yt-dlp clang sqlite-dev
 
 WORKDIR /app
 COPY src src

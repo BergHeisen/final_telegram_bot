@@ -31,6 +31,12 @@ public:
   };
 };
 
+struct GenericRequest {
+  int requestVersion = 1;
+  std::string operation = "download";
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GenericRequest, requestVersion, operation)
+
 struct DownloadRequest {
   std::string fileIdentifier = "";
   bool audioOnly = "false";
@@ -47,7 +53,7 @@ std::string createRequest(T &request) {
   RedisClient &client = RedisClient::getInstance();
   std::string id = std::to_string(
       std::uniform_int_distribution<long>(LONG_MIN, LONG_MAX)(engine));
-  nlohmann::json r{request};
+  nlohmann::json r = nlohmann::json(request);
   std::string requestJson = r.dump();
   client.set(id, requestJson);
   return id;
@@ -56,7 +62,7 @@ std::string createRequest(T &request) {
 template <typename T> std::shared_ptr<T> getRequest(std::string &id) {
   const RedisClient &client = RedisClient::getInstance();
   const std::string jsonString = client.get(id);
-  const nlohmann::json j{jsonString};
-  const auto idk = j.get<T>();
-  const auto request = std::make_shared<T>(j.get<T>());
+  const nlohmann::json j = nlohmann::json::parse(jsonString);
+  const auto request = j.get<T>();
+  return std::make_shared<T>(request);
 }

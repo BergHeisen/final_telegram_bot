@@ -1,15 +1,19 @@
 #include "yt.hpp"
 #include "boost/algorithm/string/predicate.hpp"
+#include "request_handler.hpp"
+#include "tcp_client.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <array>
 #include <boost/range/adaptor/reversed.hpp>
 #include <cstddef>
 #include <cstring>
+#include <fmt/format.h>
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <plog/Log.h>
 #include <regex>
 #include <set>
 #include <string>
@@ -18,6 +22,9 @@
 
 const std::array<int, 8> RESOLUTIONS = {144, 240,  360,  480,
                                         720, 1080, 1440, 2160};
+
+const std::string HOST = get_env_var_or_default("YTDL_HOST", "127.0.0.1");
+const std::string PORT = get_env_var_or_default("YTDL_HOST_PORT", "3436");
 
 static std::regex formatNoteRegex("(^[\\d]+)");
 
@@ -57,7 +64,6 @@ void from_json(const nlohmann::json &j, VideoInformation &p) {
   j.at("id").get_to(p.id);
   p.description = value_at_or_default<std::string>(j, "description", "");
   j.at("extractor").get_to(p.extractor);
-  j.at("filename").get_to(p.filename);
   p.thumbnails = get_at_optional<std::vector<Thumbnail>>(j, "thumbnails");
   j.at("formats").get_to<std::vector<VideoFormat>>(p.formats);
   p.uploader = value_at_or_default<std::string>(j, "uploader", "unknown");
@@ -65,28 +71,33 @@ void from_json(const nlohmann::json &j, VideoInformation &p) {
   j.at("original_url").get_to(p.url);
 }
 
-#ifdef DEBUG
-template class std::shared_ptr<VideoInformation>
-#endif
-    std::pair<std::shared_ptr<VideoInformation>, int>
-    getVideoInformationJSON(const char *url) {
-  auto [jsonString, exitCode] = exec("yt-dlp", {"-j", url});
-  if (exitCode == 0) {
-    try {
-      auto json = nlohmann::json::parse(jsonString);
-      auto videoFormat = json.get<VideoInformation>();
-      return std::pair(std::make_shared<VideoInformation>(videoFormat),
-                       exitCode);
-    } catch (nlohmann::json::exception) {
-      return std::pair(std::make_shared<VideoInformation>(), 1);
-    }
-  }
-
-  return std::pair(std::make_shared<VideoInformation>(), exitCode);
+void from_json(const nlohmann::json &j, InfoResponse &p) {
+  j.at("success").get_to(p.success);
+  j.at("error_msg").get_to(p.error_msg);
+  p.info = value_at_or_default(j, "info", VideoInformation{});
 }
 
-std::set<int>
-getAvailableResolutions(VideoInformation &information) {
+std::pair<std::shared_ptr<VideoInformation>, InfoResponse>
+getVideoInformationJSON(const std::string url) {
+  auto connection = TCPConnection::instantiate(HOST, std::stoi(PORT));
+  nlohmann::json jR;
+  InfoRequest r{url};
+  to_json(jR, r);
+  std::string jsonString = connection->exchangeMessage(jR.dump());
+  LOGD << fmt::format("jsonString: {}", jsonString);
+  nlohmann::json jA = nlohmann::json::parse(jsonString);
+  auto infoResponse = jA.get<InfoResponse>();
+  if (infoResponse.success == false) {
+    LOGD << fmt::format("GetInfo on URL {} failed, error message: {}", url,
+                        infoResponse.error_msg);
+    return std::pair(std::make_shared<VideoInformation>(), infoResponse);
+  } else {
+    auto info = std::make_shared<VideoInformation>(infoResponse.info);
+    return std::pair(info, infoResponse);
+  }
+}
+
+std::set<int> getAvailableResolutions(const VideoInformation &information) {
   std::set<int> resolutions;
   if (information.formats.begin()->format_note == "unknown" &&
       information.extractor != "twitter") {
@@ -114,7 +125,7 @@ getAvailableResolutions(VideoInformation &information) {
   return resolutions;
 }
 
-std::string getThumbnail(VideoInformation &information) {
+std::string getThumbnail(const VideoInformation &information) {
   if (!information.thumbnails.has_value())
     return "";
   for (auto &i : boost::adaptors::reverse(information.thumbnails.value())) {
@@ -122,5 +133,24 @@ std::string getThumbnail(VideoInformation &information) {
       continue;
     }
     return i.url;
+  }
+}
+
+DownloadResponse download_video(const std::string url,
+                                const std::string resolution, bool audioOnly) {
+  auto connection = TCPConnection::instantiate(HOST, std::stoi(PORT));
+  nlohmann::json jR;
+  DownloadInfoRequest r{url, audioOnly, resolution};
+  to_json(jR, r);
+  std::string jsonString = connection->exchangeMessage(jR.dump());
+  LOGD << fmt::format("jsonString: {}", jsonString);
+  nlohmann::json jA = nlohmann::json::parse(jsonString);
+  auto infoResponse = jA.get<DownloadResponse>();
+  if (infoResponse.success == false) {
+    LOGD << fmt::format("GetInfo on URL {} failed, error message: {}", url,
+                        infoResponse.error_msg);
+    return infoResponse;
+  } else {
+    return infoResponse;
   }
 }
