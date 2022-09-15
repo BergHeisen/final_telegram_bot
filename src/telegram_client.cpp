@@ -211,6 +211,5 @@ std::string sanitizeForMarkdownV2(std::string str) {
   replace(str, "}", "\\}");
   replace(str, "!", "\\!");
   replace(str, ".", "\\.");
-  std::cout << str << std::endl;
   return str;
 }
