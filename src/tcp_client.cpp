@@ -1,12 +1,12 @@
 #include "tcp_client.hpp"
 #include "fmt/core.h"
-#include <_types/_uint32_t.h>
 #include <arpa/inet.h>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/in.h> /* To define `struct in_addr'.  */
 #include <plog/Log.h>
 #include <sstream>
 #include <strings.h>
@@ -26,13 +26,14 @@ void TCPConnection::initiate_connection(const std::string &host,
     throw;
   }
   const int enable = 1;
-  // hostent *host_t = gethostbyname(host.c_str());
+  hostent *host_t = gethostbyname(host.c_str());
   sockaddr_in sendSockAddr;
   bzero(&sendSockAddr, sizeof(sendSockAddr));
   // bcopy(host_t->h_addr_list, &sendSockAddr.sin_addr, host_t->h_length);
   sendSockAddr.sin_family = AF_INET;
   sendSockAddr.sin_port = htons(port);
-  sendSockAddr.sin_addr.s_addr = inet_addr(host.c_str());
+  sendSockAddr.sin_addr.s_addr =
+      inet_addr(inet_ntoa(**(in_addr **)host_t->h_addr_list));
   // setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEADDR, &enable,
   //            sizeof(int));
 
