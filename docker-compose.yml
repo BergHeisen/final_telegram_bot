@@ -8,11 +8,22 @@ services:
       - MONGO_URL=mongodb://mongo:27017
       - REDIS_HOST=redis_db
       - SERVER_URL=bergheisen.com
+      - YTDL_HOST=provider
       - VIDEO_DOWNLOAD_SIZE_LIMIT_MEGABYTES=200
       - RATE_LIMITER_RATE=5000
       - RATE_LIMITER_THRESHOLD=10
     volumes:
-      - video-volume:/mnt/disks/filestorage/videos
+      - video-volume:/videos
+    networks:
+      - application-network
+  ytdl_provider:
+    build: ytdl_provider/
+    restart: unless-stopped
+    hostname: provider
+    environment:
+      - DOWNLOAD_FOLDER="/videos"
+    volumes:
+      - video-volume:/videos
     networks:
       - application-network
   redis_db:
@@ -31,5 +42,4 @@ networks:
 
 volumes:
   video-volume:
-  mongodb_data_container:
   redis_data_container:
