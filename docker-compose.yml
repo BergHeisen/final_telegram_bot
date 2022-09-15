@@ -16,12 +16,13 @@ services:
       - video-volume:/videos
     networks:
       - application-network
+
   ytdl_provider:
     build: ytdl_provider/
     restart: unless-stopped
     hostname: provider
     environment:
-      - DOWNLOAD_FOLDER="/videos"
+      - DOWNLOAD_FOLDER=/videos
     volumes:
       - video-volume:/videos
     networks:
