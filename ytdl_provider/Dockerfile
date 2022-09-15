@@ -1,6 +1,6 @@
 FROM python:3.10-alpine3.16
 
-RUN apk add git g++
+RUN apk add git g++ ffmpeg
 
 WORKDIR /app
 COPY requirements.txt .
