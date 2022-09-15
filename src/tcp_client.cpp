@@ -32,14 +32,14 @@ void TCPConnection::initiate_connection(const std::string &host,
   // bcopy(host_t->h_addr_list, &sendSockAddr.sin_addr, host_t->h_length);
   sendSockAddr.sin_family = AF_INET;
   sendSockAddr.sin_port = htons(port);
-  sendSockAddr.sin_addr.s_addr =
-      inet_addr(inet_ntoa(**(in_addr **)host_t->h_addr_list));
+  const char *hostIP = inet_ntoa(**(in_addr **)host_t->h_addr_list);
+  sendSockAddr.sin_addr.s_addr = inet_addr(hostIP);
   // setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEADDR, &enable,
   //            sizeof(int));
 
   int status = connect(sockfd, (sockaddr *)&sendSockAddr, sizeof(sendSockAddr));
   if (status < 0) {
-    LOGD << fmt::format("Unable to bind to host: {} port: {} errno: {}", host,
+    LOGD << fmt::format("Unable to bind to host: {} port: {} errno: {}", hostIP,
                         port, status);
     throw;
   } else {
