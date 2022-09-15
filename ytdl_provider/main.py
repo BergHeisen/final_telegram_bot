@@ -31,7 +31,7 @@ port = os.getenv("PORT", 3436)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-server_address = ("127.0.0.1", port)
+server_address = ("0.0.0.0", port)
 sock.bind(server_address)
 logger.info(f"Listening on 0.0.0.0:{port}")
 
