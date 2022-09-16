@@ -24,6 +24,7 @@ const std::string table_creation = R"(
     id PRIMARY KEY,
     title TEXT NOT NULL,
     filename TEXT NOT NULL,
+    filePath TEXT NOT NULL,
     path TEXT NOT NULL,
     urlHash TEXT NOT NULL,
     lastAccessed INT NOT NULL
@@ -50,7 +51,7 @@ private:
     if (exit != SQLITE_OK) {
       PLOGE << fmt::format("There was an error creating the table, errmsg: {}",
                            error_msg);
-      sqlite3_free(error_msg);
+      sqlite3_free(&error_msg);
     }
   }
 
@@ -68,45 +69,86 @@ public:
                                           const std::string &filename) {
     std::optional<FileProviderFile> result;
     const std::string urlHash = hash(url);
-    const char *query = sqlite3_mprintf(R"(
+    char *query = sqlite3_mprintf(R"(
     SELECT * FROM videos
       WHERE filename = %Q AND urlHash = %Q
   )",
-                                        filename.c_str(), urlHash.c_str());
+                                  filename.c_str(), urlHash.c_str());
 
     char *errmsg;
-    sqlite3_exec(db, query, callback, &result, &errmsg);
+    const int returnCode = sqlite3_exec(db, query, callback, &result, &errmsg);
+    if (returnCode != SQLITE_OK) {
+      PLOGE << fmt::format("There was an issue getting File url: {}, filename: "
+                           "{},  query: {},errmsg: {}",
+                           url, filename, query, errmsg);
+      sqlite3_free(&errmsg);
+    } else {
+      updateLastAccessed(result->id);
+    }
+    sqlite3_free(query);
     return result;
   }
   std::optional<FileProviderFile> getFile(const std::string &id) {
     std::optional<FileProviderFile> result;
-    const std::string query =
+    char *query =
         sqlite3_mprintf("SELECT * FROM Videos WHERE id = %Q", id.c_str());
 
     char *errmsg;
-    sqlite3_exec(db, (query.c_str()), callback, &result, &errmsg);
+    const int returnCode = sqlite3_exec(db, query, callback, &result, &errmsg);
+    if (returnCode != SQLITE_OK) {
+      PLOGE << fmt::format(
+          "There was an issue getting File {}, query: {},errmsg: {}", id, query,
+          errmsg);
+      sqlite3_free(&errmsg);
+    } else {
+      updateLastAccessed(id);
+    }
+    sqlite3_free(query);
     return result;
   }
+  void updateLastAccessed(const std::string &id) {
+
+    const auto newLastAccessed =
+        std::chrono::system_clock::now().time_since_epoch().count();
+    char *query = sqlite3_mprintf(
+        "UPDATE Videos SET lastAccessed = %Q WHERE Videos.id = %Q",
+        std::to_string(newLastAccessed).c_str(), id.c_str());
+
+    PLOGD << fmt::format("Using SQLite Database from {} inserting: {}", path,
+                         query);
+    char *errmsg;
+    const int returnCode = sqlite3_exec(db, query, NULL, NULL, &errmsg);
+    if (returnCode != SQLITE_OK) {
+      PLOGE << fmt::format("There was an issue inserting fileIdentifier: {}, "
+                           "query: {},errmsg: {}",
+                           id, query, errmsg);
+      sqlite3_free(&errmsg);
+    }
+    sqlite3_free(query);
+  }
   std::string insertFile(FileProviderFile &file) {
-    PLOGD << fmt::format("Using SQLite Database from {}", path);
-    const char *query = sqlite3_mprintf(
+    char *query = sqlite3_mprintf(
         "INSERT INTO videos(id, title, filename, path, urlHash, "
-        "lastAccessed) VALUES(%Q, %Q, %Q, %Q, %Q, %Q)",
+        "lastAccessed, filePath) VALUES(%Q, %Q, %Q, %Q, %Q, %Q, %Q)",
         file.id.c_str(), file.title.c_str(), file.filename.c_str(),
         file.path.c_str(), file.urlHash.c_str(),
-        std::to_string(file.lastAccessed).c_str());
+        std::to_string(file.lastAccessed).c_str(), file.filePath.c_str());
+
+    PLOGD << fmt::format("Using SQLite Database from {} inserting: {}", path,
+                         query);
     char *errmsg;
     const int returnCode = sqlite3_exec(db, query, NULL, NULL, &errmsg);
     if (returnCode != SQLITE_OK) {
       PLOGE << fmt::format(
           "There was an issue inserting file path: {}, query: {},errmsg: {}",
           file.path, query, errmsg);
-      sqlite3_free(errmsg);
+      sqlite3_free(&errmsg);
     }
+    sqlite3_free(query);
     return file.id;
   }
   std::string insertFile(const std::string &file_path, const std::string &url,
-                         const std::string &title) {
+                         const std::string &title, bool isUrlHashed) {
     boost::filesystem::path p = boost::filesystem::absolute(file_path);
     boost::uuids::uuid id = boost::uuids::random_generator()();
     std::stringstream ss;
@@ -118,12 +160,14 @@ public:
         std::chrono::system_clock::now().time_since_epoch().count();
     file.id = ss.str();
     file.path = p.parent_path().string();
-    file.urlHash = hash(url);
-    if (getFile(url, file.filename).has_value()) {
+    file.filePath = file_path;
+    file.urlHash = isUrlHashed ? url : hash(url);
+    auto fileProvided = getFile(url, file.filename);
+    if (fileProvided.has_value()) {
       PLOGD << fmt::format(
           "File path: {}/{} already existed, not inserting again", file.path,
           file.filename);
-      return file.id;
+      return fileProvided->id;
     }
 
     return insertFile(file);
@@ -156,6 +200,10 @@ int callback(void *data, int count, char **row, char **columns) {
       if (std::strcmp(columns[i], "urlHash") == 0) {
         file.urlHash = row[i];
       }
+      if (std::strcmp(columns[i], "filePath") == 0) {
+        file.filePath = row[i];
+      }
+
       if (std::strcmp(columns[i], "lastAccessed") == 0) {
         file.lastAccessed = std::stoull(row[i]);
       }
@@ -175,7 +223,7 @@ std::optional<FileProviderFile> getFile(const std::string &url,
 }
 
 std::string insertFile(const std::string &file_path, const std::string &url,
-                       const std::string &title) {
+                       const std::string &title, bool isUrlHashed) {
 
-  return database.insertFile(file_path, url, title);
+  return database.insertFile(file_path, url, title, isUrlHashed);
 }

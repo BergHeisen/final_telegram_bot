@@ -3,6 +3,7 @@ import socket
 import os
 import logging
 import struct
+import subprocess
 import threading
 from dataclasses_json import dataclass_json
 from dataclasses import dataclass
@@ -78,6 +79,13 @@ def copy_value_from_keys(obj: Dict, keys: List):
         result[key] = obj.get(key)
     return result
 
+def has_audio(filename):
+    result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                             "format=nb_streams", "-of",
+                             "default=noprint_wrappers=1:nokey=1", filename],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    return (int(result.stdout) -1)
 
 def handleConnection(connection, client_address):
     try:
@@ -121,7 +129,7 @@ def handleConnection(connection, client_address):
                         if (request["operation"] == "download"):
                             file, errorMessage = yt.download_video(
                                 request["url"], request["resolution"], request["audio_only"])
-                            reply = FileResponse(True, "", file["path"], file["title"]).to_json(
+                            reply = FileResponse(True, "", file["path"], file["title"], ).to_json(
                             ) if file is not None else FileResponse(False, errorMessage, "", "").to_json()
                             reply_length = struct.pack(">I", len(reply))
                             connection.send(reply_length)

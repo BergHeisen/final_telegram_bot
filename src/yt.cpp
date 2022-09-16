@@ -46,6 +46,20 @@ T value_at_or_default(const nlohmann::json &j, const char *key,
   }
 }
 
+struct Stream {
+  std::string codec_type;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Stream, codec_type);
+
+struct FFProbeAudioRequestResult {
+  std::vector<Stream> streams;
+};
+
+void from_json(const nlohmann::json &j, FFProbeAudioRequestResult &p) {
+  j.at("streams").get_to<std::vector<Stream>>(p.streams);
+}
+
 void from_json(const nlohmann::json &j, VideoFormat &p) {
   j.at("url").get_to(p.url);
   j.at("format_id").get_to(p.format_id);
@@ -152,5 +166,24 @@ DownloadResponse download_video(const std::string url,
     return infoResponse;
   } else {
     return infoResponse;
+  }
+}
+
+bool fileHasAudio(const std::string &filePath) {
+  auto [output, statusCode] =
+      exec("ffprobe", {"-loglevel", "error", "-show_entries",
+                       "stream=codec_type", "-of", "json", filePath});
+  if (statusCode != 0)
+    return false;
+  try {
+    nlohmann::json j = nlohmann::json::parse(output);
+    const auto result = j.get<FFProbeAudioRequestResult>();
+    for (auto &i : result.streams) {
+      if (i.codec_type == "audio")
+        return true;
+    }
+    return false;
+  } catch (...) {
+    return false;
   }
 }

@@ -20,8 +20,12 @@ CXXFLAGS  := -DDebug -Wall -g -O0 -I$(INCLUDE) -I./third_party/tgbot-cpp/include
 LDLIBS  := -lm -lssl -lcrypto -lpthread -lboost_system -lsqlite3 -lboost_filesystem
 
 STATIC_LIBRARIES := ${LIBS}/libTgBot.a ${LIBS}/libfmt.a ${LIBS}/libcpp_redis.a ${LIBS}/libtacopie.a
+ifdef GTEST_LIB
+	GTEST := $(GTEST_LIB)
+else
+	GTEST := /usr/local/lib/libgtest.a
+endif
 
-GTEST = "${GTEST_LIB:-/usr/local/lib/libgtest.a}"
 
 
 .PHONY: all run clean
@@ -73,7 +77,7 @@ $(TEST_OBJ)/%.o: $(TEST_SRC)/%.cpp | $(TEST_OBJ)
 	$(CC) $(CXXFLAGS) -c $< -o $@
 
 $(TEST_EXE): $(TEST_OBJS)  $(STATIC_LIBRARIES) | $(BIN)
-	$(CC) $(LDFLAGS) $^ -o $@ $(STATIC_LIBRARIES) $(LDLIBS) $(GTEST_LIB)
+	$(CC) $(LDFLAGS) $^ -o $@ $(STATIC_LIBRARIES) $(LDLIBS) $(GTEST)
 
 test: $(TEST_EXE) 
 

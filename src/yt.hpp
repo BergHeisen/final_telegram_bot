@@ -50,7 +50,7 @@ struct DownloadResponse {
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DownloadResponse, success, error_msg,
-                                   file_path);
+                                   file_path, title);
 
 struct InfoRequest {
   std::string url;
@@ -72,3 +72,4 @@ getVideoInformationJSON(const std::string url);
 
 std::set<int> getAvailableResolutions(const VideoInformation &information);
 std::string getThumbnail(const VideoInformation &information);
+bool fileHasAudio(const std::string &filePath);

@@ -12,7 +12,7 @@ private:
     const char *fileExtension;
     const char *mimeType;
   };
-  static MimeTypes::entry types[347];
+  static MimeTypes::entry types[348];
   static int strcmpi(const char *s1, const char *s2);
 };
 

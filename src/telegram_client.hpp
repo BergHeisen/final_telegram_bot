@@ -1,6 +1,5 @@
 #pragma once
 #include "BS_thread_pool.hpp"
-#include "plog/Logger.h"
 #include <memory>
 #include <tgbot/tgbot.h>
 using namespace TgBot;
@@ -13,6 +12,7 @@ private:
   void setupMessageHandlers();
 
 public:
+  const char *token;
   TelegramClient(const char *token);
   void start();
 };

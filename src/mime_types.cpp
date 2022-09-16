@@ -68,7 +68,7 @@ int MimeTypes::strcmpi(const char *s1, const char *s2) {
 
 // Source:
 // https://raw.githubusercontent.com/broofa/node-mime/master/types/standard.json
-MimeTypes::entry MimeTypes::types[347] = {
+MimeTypes::entry MimeTypes::types[348] = {
     {"*3gpp", "audio/3gpp"},
     {"*jpm", "video/jpm"},
     {"*mp3", "audio/mp3"},
@@ -234,6 +234,7 @@ MimeTypes::entry MimeTypes::types[347] = {
     {"mj2", "video/mj2"},
     {"mjp2", "video/mj2"},
     {"mjs", "application/javascript"},
+    {"mkv", "video/x-matroska"},
     {"mml", "text/mathml"},
     {"mods", "application/mods+xml"},
     {"mov", "video/quicktime"},

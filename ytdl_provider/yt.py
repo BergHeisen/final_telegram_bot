@@ -3,6 +3,7 @@ import logging
 from functools import cached_property
 from enum import Enum, auto
 from os import getenv
+import hashlib
 import pathlib
 from threading import Lock
 import threading
@@ -46,20 +47,21 @@ class YoutubeVideo:
         key = self.get_info[
             "id"] + resolution if audioOnly else self.get_info["id"] + "audio_only"
         mutex = self.__mutexRepo[key]
+        parentFolderName = hashlib.sha1(self.__url.encode("utf8")).hexdigest()
         with mutex:
             logging.debug(f"THREAD {threading.get_ident()}: Acquired lock for initialisation of id: {self.get_info['id']} with"
                           f"audio_only: {audioOnly} and resolution: {resolution} ")
             opts = (
                 {
-                    "format-sort": [f"res={resolution}", "ext"],
-                    "outtmpl": f"{DOWNLOAD_FOLDER}/%(id)s_{resolution}.%(ext)s",
+                    "format_sort": [f"res:{resolution}", "ext:mp4:m4a"],
+                    "outtmpl": f"{DOWNLOAD_FOLDER}/{parentFolderName}/%(id)s_{resolution}.%(ext)s",
+                    "merge_output_format": "mp4",
                     "overwrites": False,
                     "nocheckcertificate": True,
-                    "merge_output_format": "mp4",
                 } if not audioOnly else {
                     "format": "bestaudio",
                     "nocheckcertificate": True,
-                    "outtmpl": f"{DOWNLOAD_FOLDER}/%(id)s_{resolution}.%(ext)s",
+                    "outtmpl": f"{DOWNLOAD_FOLDER}/{parentFolderName}/%(id)s_{resolution}.%(ext)s",
                     "final_ext": "mp3",
                     "postprocessors": [
                         {

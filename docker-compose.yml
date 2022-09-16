@@ -6,8 +6,10 @@ services:
     environment:
       - DOWNLOAD_LOCATION=/mnt/disks/filestorage/videos
       - MONGO_URL=mongodb://mongo:27017
+      - TELEGRAM_TOKEN=5787046996:AAEXVl6qurm6Ko54gC91cfw-13vs56J6uYU
       - REDIS_HOST=redis_db
-      - SERVER_URL=bergheisen.com
+      #- SERVER_URL=bergheisen.com
+      - DOWNLOAD_FOLDER=/videos
       - YTDL_HOST=provider
       - VIDEO_DOWNLOAD_SIZE_LIMIT_MEGABYTES=200
       - RATE_LIMITER_RATE=5000
@@ -16,7 +18,6 @@ services:
       - video-volume:/videos
     networks:
       - application-network
-
   ytdl_provider:
     build: ytdl_provider/
     restart: unless-stopped
@@ -27,6 +28,21 @@ services:
       - video-volume:/videos
     networks:
       - application-network
+
+  file_provider:
+    build: fileProvider/
+    command: "gunicorn --timeout 0 --threads 4 -b 0.0.0.0:4040 app:app"
+    restart: unless-stopped
+    hostname: fileProvider
+    environment:
+      - DOWNLOAD_FOLDER=/videos
+    volumes:
+      - video-volume:/videos
+    networks:
+      - application-network
+    ports:
+      - "4040:4040"
+    
   redis_db:
     hostname: redis_db
     image: redis:latest

@@ -16,7 +16,7 @@ RedisClient::RedisClient() {
   connect(host, std::stoi(port));
   client->sync_commit();
 }
-void RedisClient::set(std::string &key, std::string &value) const {
+void RedisClient::set(const std::string &key, const std::string &value) const {
   auto future = client->set(key, value);
   client->sync_commit();
   const auto reply = future.get();
@@ -30,7 +30,7 @@ void RedisClient::set(std::string &key, std::string &value) const {
   return;
 }
 
-std::string RedisClient::get(std::string &key) const {
+std::string RedisClient::get(const std::string &key) const {
   auto future = client->get(key);
   client->sync_commit();
   const auto reply = future.get();
@@ -41,7 +41,7 @@ std::string RedisClient::get(std::string &key) const {
   }
 }
 
-void RedisClient::connect(std::string &host, int port) const {
+void RedisClient::connect(const std::string &host, const int port) const {
   const cpp_redis::connect_callback_t idk;
   client->connect(host, port,
                   [](const std::string &host, std::size_t port,
