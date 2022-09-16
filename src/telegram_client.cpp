@@ -172,7 +172,7 @@ void handleMessage(TelegramClient *tgclient, Bot *client,
       auto keyboard = generateKeyboard(*videoInfo.get());
       std::string reply =
           fmt::format("Requesting to download:\n\n*{}*\nfrom: "
-                      "*{}*\n\n_Choose on the options below_",
+                      "*{}*\n\n_Choose one of the options below_",
                       sanitizeForMarkdownV2(videoInfo->title),
                       sanitizeForMarkdownV2(videoInfo->uploader));
       if (!videoInfo->thumbnails.has_value()) {
