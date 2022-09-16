@@ -1,4 +1,6 @@
 #include "utils.hpp"
+#include "fmt/core.h"
+#include "fmt/format.h"
 #include <array>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -6,6 +8,7 @@
 #include <cstdlib>
 #include <memory>
 #include <openssl/sha.h>
+#include <plog/Log.h>
 #include <sstream>
 #include <unistd.h>
 
@@ -43,7 +46,8 @@ std::pair<std::string, int> exec(const char *command,
   for (auto &i : args) {
     commandbuffer << " " << i;
   }
-
+  LOGD << fmt::format("Executing: {} with args: {}", command,
+                      fmt::join(args.begin(), args.end(), " "));
   std::string cmd = commandbuffer.str();
   std::stringstream result;
   auto file = popen(cmd.c_str(), "r");
