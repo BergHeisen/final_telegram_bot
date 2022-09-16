@@ -347,7 +347,7 @@ void handleConvertRequest(Bot *bot, std::string fileIdentifier,
   const auto target = converter->getExtension();
   if (file.has_value()) {
     const std::string convertedFilename =
-        fmt::format("{}.{}", file->title, target);
+        fmt::format("{}.{}", fileNameWithoutExtension(file->filePath), target);
     const std::string out = fmt::format("{}/{}", file->path, convertedFilename);
     auto providedFile = getFile(file->urlHash, convertedFilename);
 

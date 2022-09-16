@@ -107,7 +107,7 @@ public:
     return result;
   }
   void updateLastAccessed(const std::string &id) {
-
+    return;
     const auto newLastAccessed =
         std::chrono::system_clock::now().time_since_epoch().count();
     char *query = sqlite3_mprintf(

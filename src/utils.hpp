@@ -10,3 +10,4 @@ std::string get_env_var_or_default(std::string const &key,
 
 std::string hash(const std::string &input);
 uint64_t getFileSize(const std::string &path);
+std::string fileNameWithoutExtension(const std::string &filepath);

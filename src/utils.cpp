@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include <array>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/uuid/detail/sha1.hpp>
 #include <cstdlib>
 #include <memory>
@@ -54,4 +55,8 @@ std::pair<std::string, int> exec(const char *command,
   }
   int returnCode = pclose(file) / 256;
   return std::pair(result.str(), returnCode);
+}
+
+std::string fileNameWithoutExtension(const std::string &filepath) {
+  return boost::filesystem::path(filepath).stem().string();
 }
