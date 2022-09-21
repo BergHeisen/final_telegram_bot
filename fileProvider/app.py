@@ -1,6 +1,7 @@
 import flask
 from flask import Flask
 from markupsafe import escape
+import mimetypes
 import sqlite3
 from os import getenv
 import os.path
@@ -39,5 +40,6 @@ def getVideo(fileId):
     file, title= get_file_or_none(id)
     if file is None:
         return flask.make_response("", 404)
-    return flask.send_file(file, as_attachment= True, download_name=f"{title}.{get_extension(file)}")
+    mimetype = mimetypes.guess_extension(file)
+    return flask.send_file(file, as_attachment= True, download_name=f"{title}.{get_extension(file)}", mimetype=mimetype or "application/octet-stream")
 

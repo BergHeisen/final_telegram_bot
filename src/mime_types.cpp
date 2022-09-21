@@ -26,7 +26,7 @@ const char *MimeTypes::getType(const char *extension) {
     }
   }
 
-  return NULL;
+  return "application/octet-stream";
 }
 
 const char *MimeTypes::getExtension(const char *type, int skip) {
