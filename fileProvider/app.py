@@ -20,7 +20,7 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 def get_extension(filename):
-return os.path.splitext(filename)[1]
+    return os.path.splitext(filename)[1]
 
 def get_file_or_none(id: str):
     query = f"SELECT filePath, title FROM Videos WHERE Videos.id = '{id}'"
@@ -40,6 +40,10 @@ def getVideo(fileId):
     file, title= get_file_or_none(id)
     if file is None:
         return flask.make_response("", 404)
-    mimetype = mimetypes.guess_extension(file)[0]
-    return flask.send_file(file, as_attachment= True, download_name=f"{title}{get_extension(file)}", mimetype=mimetype or "application/octet-stream")
-
+    file_mimetype = mimetypes.guess_type(file)[0] or "application/octet-stream"
+    filesize = os.path.getsize(file)
+    logger.debug(f"MIMEType for file: {file}: {file_mimetype} filesize: {filesize}")
+    response = flask.send_file(file, as_attachment=False, download_name=f"{title}{get_extension(file)}", max_age=0)
+    response.headers["content-type"] = file_mimetype
+    response.headers["content-length"] = filesize
+    return response
