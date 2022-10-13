@@ -23,7 +23,6 @@ MAX_FILESIZE = getenv("MAX_FILESIZE", None)
 class YoutubeVideo:
     videos = {}
     __mutexRepo = defaultdict(lambda: Lock())
-    __yt = yt_dlp.YoutubeDL()
     __url: str
     state: State
     __logger: logging.Logger
@@ -38,7 +37,8 @@ class YoutubeVideo:
     def get_info(self):
         try:
             self.state = State.VALID
-            return YoutubeVideo.__yt.extract_info(self.__url, download=False)
+            with yt_dlp.YoutubeDL() as ydl:
+                return ydl.extract_info(self.__url, download=False)
         except yt_dlp.utils.DownloadError:
             self.state = State.INVALID
             return None
