@@ -80,10 +80,6 @@ int GIFConverter::convert(const std::string &path,
                           const std::string &out) const {
   const std::vector<std::string> args = {
       "-y",
-      "-ss",
-      "30",
-      "-t",
-      "3",
       "-i",
       path,
       "-vf",
@@ -92,9 +88,9 @@ int GIFConverter::convert(const std::string &path,
       out};
   auto [output, statusCode] = exec("ffmpeg", args);
   if (statusCode != 0) {
-    PLOGD << fmt::format("FFMpeg failed, statusCode: {}, args: output: {}",
+    PLOGD << fmt::format("FFMpeg failed, statusCode: {}, args: {} output: {}",
                          statusCode, fmt::join(args.begin(), args.end(), " "),
-                         statusCode);
+                         output);
   }
   return statusCode;
 };
