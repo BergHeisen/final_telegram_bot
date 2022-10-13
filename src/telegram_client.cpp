@@ -353,7 +353,7 @@ void handleConvertRequest(Bot *bot, std::string fileIdentifier,
 
     if (!providedFile.has_value()) {
       const int statusCode = converter->convert(file->filePath, out);
-      providedFile = getFile(insertFile(out, file->urlHash, "", false));
+      providedFile = getFile(insertFile(out, file->urlHash, file->title, true));
       if (statusCode != 0) {
         bot->getApi().sendMessage(
             processingMessage->chat->id,
@@ -507,7 +507,7 @@ void TelegramClient::start() {
     PLOGI << fmt::format("Logged in with token as Bot: {}",
                          bot->getApi().getMe()->username);
     while (true) {
-      PLOGI << fmt::format("Starting long poll");
+      PLOGV << fmt::format("Starting long poll");
       poll.start();
     }
   } catch (TgException &e) {
