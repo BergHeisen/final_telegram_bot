@@ -17,7 +17,6 @@ class State(Enum):
 
 
 DOWNLOAD_FOLDER = getenv("DOWNLOAD_FOLDER", "./videos")
-MAX_FILESIZE = getenv("MAX_FILESIZE", None)
 
 
 class YoutubeVideo:
@@ -72,18 +71,11 @@ class YoutubeVideo:
                 }
             )
 
-            if MAX_FILESIZE is not None:
-                from yt_dlp import FileDownloader
-                opts["max_filesize"] = FileDownloader.parse_bytes(MAX_FILESIZE)
-                opts["error_on_too_large"] = True
 
             try:
                 with yt_dlp.YoutubeDL(opts) as ydl:
                     info = ydl.extract_info(self.__url, download=True)
                     return {"path": info["requested_downloads"][0]["filepath"], "title": info["title"]}, ""
-
-            except yt_dlp.utils.FileTooLarge:
-                return None, "Requested File is too large too download"
 
             except Exception as e:
                 logging.error(

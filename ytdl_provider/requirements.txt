@@ -1,3 +1,4 @@
 
 dataclasses-json==0.5.7
-git+https://github.com/BergHeisen/yt-dlp.git@master
+yt-dlp==2022.11.11
+
